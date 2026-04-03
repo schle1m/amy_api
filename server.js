@@ -37,7 +37,7 @@ function uploadCloud(buffer, folder) {
     Readable.from(buffer).pipe(uploadStream);
   });
 }
-app.get("/api/amy/random", async (req, res) => {
+app.get("/api/random", async (req, res) => {
   try {
     const { resources } = await cloudinary.search
       .expression("folder:amy")
@@ -55,7 +55,7 @@ app.get("/api/amy/random", async (req, res) => {
     res.status(500).json({ status: 500, message: "Failed to fetch image" });
   }
 });
-app.post("/api/amy/upload", tokencheck, upload.single("image"), async (req, res) => {
+app.post("/api/upload", tokencheck, upload.single("image"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ status: 400, message: "No file uploaded" });
   }
@@ -73,7 +73,7 @@ app.post("/api/amy/upload", tokencheck, upload.single("image"), async (req, res)
     res.status(500).json({ status: 500, message: "Upload failed" });
   }
 });
-app.delete("/api/amy/delete/:folder/:public_id", tokencheck, async (req, res) => {
+app.delete("/api/delete/:folder/:public_id", tokencheck, async (req, res) => {
   const public_id = `${req.params.folder}/${req.params.public_id}`;
   try {
     const result = await cloudinary.uploader.destroy(public_id);
