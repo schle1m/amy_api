@@ -1,5 +1,5 @@
 async function test() {
-  const rq = 100; 
+  const rq: number = 100; 
   const results = { success: 0, ratelimited: 0, other: 0 };
   console.log(`Sending ${rq} requests -.-`);
   const requests = Array.from({ length: rq }, async (_, i) => {
