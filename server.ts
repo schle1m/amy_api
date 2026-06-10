@@ -1,12 +1,15 @@
 require("dotenv").config();
 const express = require("express");
+import type { Request, Response, NextFunction } from "express";
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { Readable } = require("stream");
 const rateLimit = require("express-rate-limit");
 const app = express();
 app.use(express.json());
-// configure Cloudinary (image cnd for amy imgs)
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}
 cloudinary.config({
   cloud_name: process.env.cloud_name,
   api_key:    process.env.cloud_key,
@@ -20,8 +23,7 @@ const limiter = rateLimit({
 });
 
 app.use(limiter); // apply to all endpoints
-// function to chek the token
-function tokencheck(req, res, next) {
+function tokencheck(req: Request, res: Response, next: NextFunction) {
   const token = req.headers["x-api-token"];
   if (!token || token !== process.env.token) {
     return res.status(401).json({ status: 401, message: "Unauthorized" });
@@ -29,16 +31,16 @@ function tokencheck(req, res, next) {
   next();
 }
 const upload = multer({ storage: multer.memoryStorage() });
-function uploadCloud(buffer, folder) {
+function uploadCloud( buffer: Buffer, folder: string): Promise<any> {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       { folder },
-      (err, result) => err ? reject(err) : resolve(result)
+      (err: any, result: Response) => err ? reject(err) : resolve(result)
     );
     Readable.from(buffer).pipe(uploadStream);
   });
 }
-app.get("/api/random", async (req, res) => {
+app.get("/api/random", async (req: Request, res: Response) => {
   try {
     const { resources } = await cloudinary.search
       .expression("folder:amy")
@@ -50,11 +52,11 @@ app.get("/api/random", async (req, res) => {
     const random = resources[Math.floor(Math.random() * resources.length)];
     res.json({ status: 200, url: random.secure_url });
   } catch (err) {
-    console.error("Get Error", err.message);
+    console.error("Get Error",err instanceof Error ? err.message :String(err));
     res.status(500).json({ status: 500, message: "Failed to fetch image" });
   }
 });
-app.post("/api/upload", tokencheck, upload.single("image"), async (req, res) => {
+app.post("/api/upload", tokencheck, upload.single("image"), async (req: MulterRequest, res: Response) => {
   if (!req.file) {
     return res.status(400).json({ status: 400, message: "No file uploaded" });
   }
@@ -68,11 +70,11 @@ app.post("/api/upload", tokencheck, upload.single("image"), async (req, res) => 
       public_id: result.public_id,
     });
   } catch (err) {
-    console.error("Error on Upload", err.message);
+    console.error("Error on Upload", err instanceof Error ? err.message : String(err));
     res.status(500).json({ status: 500, message: "Upload failed" });
   }
 });
-app.delete("/api/delete/:folder/:public_id", tokencheck, async (req, res) => {
+app.delete("/api/delete/:folder/:public_id", tokencheck, async (req: Request, res: Response) => {
   const public_id = `${req.params.folder}/${req.params.public_id}`;
   try {
     const result = await cloudinary.uploader.destroy(public_id);
@@ -81,11 +83,11 @@ app.delete("/api/delete/:folder/:public_id", tokencheck, async (req, res) => {
     }
     res.json({ status: 200, message: "Image deleted", public_id });
   } catch (err) {
-    console.error("Delete Error", err.message);
+    console.error("Delete Error", err instanceof Error? err.message : String(err));
     res.status(500).json({ status: 500, message: "Failed to delete image" });
   }
 })
-app.get("/api/endpoints", async (req, res) => {
+app.get("/api/endpoints", async (req: Request, res: Response) => {
   try {
     const response = {
       status: 200,
@@ -95,11 +97,11 @@ app.get("/api/endpoints", async (req, res) => {
     }
     res.json(response)
   } catch(err) {
-    res.status(500).json({status: 500, message: err.message})
+    res.status(500).json({status: 500, message: err instanceof Error ? err.message : String(err)})
     console.error(`Endpoint error: ${err}`)
   }
 })
-app.get("/api/info", async (req, res) => {
+app.get("/api/info", async (req: Request, res: Response) => {
   try {
     const btstamp = 1619654400
     const birthDate = new Date(btstamp * 1000)
@@ -124,7 +126,7 @@ app.get("/api/info", async (req, res) => {
   res.json(response)
   } catch(err) {
     console.error("Info error", err)
-    res.status(500).json({ status: 500, message: err.message})
+    res.status(500).json({ status: 500, message: err instanceof Error ? err.message : String(err)})
   }
 })
 const p = process.env.p || "3000"
