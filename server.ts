@@ -15,6 +15,7 @@ cloudinary.config({
   api_key:    process.env.cloud_key,
   api_secret: process.env.cloud_secret,
 });
+app.set("trust proxy", 1);
 //config for the ratelimit
 const limiter = rateLimit({
   windowMs: 60 * 1000,  
